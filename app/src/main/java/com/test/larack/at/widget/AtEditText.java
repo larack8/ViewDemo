@@ -62,7 +62,6 @@ public class AtEditText extends EditText {
     @Override
     public void setText(final CharSequence text, BufferType type) {
         super.setText(text, type);
-
     }
 
     @Override
@@ -70,8 +69,8 @@ public class AtEditText extends EditText {
         return (Editable) super.getText();
     }
 
-    public String getDisplayText() {
-        return getText().toString();
+    public SpannableStringBuilder getDisplaySpan() {
+        return convertOrgToDisplay(getOrgText());
     }
 
     public String getOrgText() {

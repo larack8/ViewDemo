@@ -6,16 +6,20 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.text.Editable;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.text.method.LinkMovementMethod;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.test.larack.R;
 import com.test.larack.at.data.User;
 import com.test.larack.at.widget.AtEditText;
 import com.test.larack.at.widget.MentionEditText;
+import com.test.larack.at.widget.MentionTextView;
 
 public class AtMainActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -24,7 +28,8 @@ public class AtMainActivity extends AppCompatActivity implements View.OnClickLis
     private static final String TEST_NAME = "ddd@{uid:#003,nick:Venusaur}222@{uid:#005,nick:Charmeleon}hhh";
 
     private Context mContext;
-    private AtEditText mEtInput;
+    private AtEditText mMentionEditText;
+    private MentionTextView mMentionTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,21 +37,53 @@ public class AtMainActivity extends AppCompatActivity implements View.OnClickLis
         setContentView(R.layout.activity_at_main);
         mContext = AtMainActivity.this;
 
-        mEtInput = (AtEditText) findViewById(R.id.et_input);
+        mMentionEditText = (AtEditText) findViewById(R.id.et_input);
+        mMentionTextView = (MentionTextView) findViewById(R.id.tv_show);
 
         findViewById(R.id.btn_at).setOnClickListener(this);
         findViewById(R.id.btn_preview_display).setOnClickListener(this);
         findViewById(R.id.btn_preview_data).setOnClickListener(this);
         findViewById(R.id.btn_mock_data).setOnClickListener(this);
 
-        mEtInput.setText(mEtInput.convertOrgToDisplay(TEST_NAME));
-        mEtInput.setSelection(mEtInput.getEditableText().toString().length());
+        mMentionEditText.setText(mMentionEditText.convertOrgToDisplay(TEST_NAME));
+        mMentionEditText.setSelection(mMentionEditText.getEditableText().toString().length());
 
-//        mEtInput.setText(TEST_NAME);
-        mEtInput.setOnMentionInputListener(new AtEditText.OnMentionInputListener() {
+//        mMentionEditText.setText(TEST_NAME);
+        mMentionEditText.setOnMentionInputListener(new AtEditText.OnMentionInputListener() {
             @Override
             public void onMentionCharacterInput(String tag) {
                 startAtActivity();
+            }
+        });
+
+        mMentionEditText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                int maxText = 30;
+                if (s.length() > maxText) {
+                    Toast.makeText(AtMainActivity.this, "字数上限" + maxText + "字", Toast.LENGTH_SHORT).show();
+                    mMentionEditText.setText(s.toString().substring(0, maxText));
+                    mMentionTextView.setText(mMentionEditText.getText());
+                    mMentionEditText.setSelection(mMentionEditText.getText().length());
+                }
+            }
+        });
+
+        mMentionTextView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mMentionEditText.setText(mMentionTextView.getDisplaySpan().toString());
+                mMentionEditText.setSelection(mMentionEditText.getText().length());
             }
         });
     }
@@ -61,10 +98,10 @@ public class AtMainActivity extends AppCompatActivity implements View.OnClickLis
         if (requestCode == REQUEST_USER_LIST && resultCode == RESULT_OK) {
 //            User user = (User) data.getParcelableExtra(User.TAG);
 //            StringBuilder sb = new StringBuilder();
-//            sb.append(mEtInput.getText()).append("{uid:").append(user.getUserId()).append(",nick:").append(user.getNickname() + "}");
-//            mEtInput.setText(sb.toString());
+//            sb.append(mMentionEditText.getText()).append("{uid:").append(user.getUserId()).append(",nick:").append(user.getNickname() + "}");
+//            mMentionEditText.setText(sb.toString());
 
-            mEtInput.insertAt((User) data.getParcelableExtra(User.TAG));
+            mMentionEditText.insertAt((User) data.getParcelableExtra(User.TAG));
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
@@ -103,7 +140,7 @@ public class AtMainActivity extends AppCompatActivity implements View.OnClickLis
         View view = getLayoutInflater().inflate(R.layout.dialog_at_preview, null);
         TextView tvDisplay = (TextView) view.findViewById(R.id.tv_display);
         TextView tvDescription = (TextView) view.findViewById(R.id.tv_description);
-        tvDisplay.setText(mEtInput.getText());
+        tvDisplay.setText(mMentionEditText.getText());
         tvDisplay.setMovementMethod(LinkMovementMethod.getInstance());
         tvDescription.setText("预览在TextView中的显示效果,每个“@”对象都可点击");
         AlertDialog dialog = new AlertDialog.Builder(mContext).setView(view)
@@ -121,7 +158,7 @@ public class AtMainActivity extends AppCompatActivity implements View.OnClickLis
         View view = getLayoutInflater().inflate(R.layout.dialog_at_preview, null);
         TextView tvDisplay = (TextView) view.findViewById(R.id.tv_display);
         TextView tvDescription = (TextView) view.findViewById(R.id.tv_description);
-        tvDisplay.setText(mEtInput.getOrgText());
+        tvDisplay.setText(mMentionEditText.getOrgText());
         tvDescription.setText("发送给后台的数据,假定“@”对象的格式为@{uid:编号,nick:名称}");
         AlertDialog dialog = new AlertDialog.Builder(mContext).setView(view)
                 .setNegativeButton("关闭", new DialogInterface.OnClickListener() {
@@ -139,7 +176,7 @@ public class AtMainActivity extends AppCompatActivity implements View.OnClickLis
         View view = getLayoutInflater().inflate(R.layout.dialog_at_preview, null);
         TextView tvDisplay = (TextView) view.findViewById(R.id.tv_display);
         TextView tvDescription = (TextView) view.findViewById(R.id.tv_description);
-        tvDisplay.setText(mEtInput.convertOrgToDisplay(new SpannableStringBuilder(mockData)));
+        tvDisplay.setText(mMentionEditText.convertOrgToDisplay(new SpannableStringBuilder(mockData)));
         tvDisplay.setMovementMethod(LinkMovementMethod.getInstance());
         tvDescription.setText("模拟收到后台的数据: " + mockData);
         AlertDialog dialog = new AlertDialog.Builder(mContext).setView(view)
